@@ -1,0 +1,11 @@
+{
+  "name": "@globalhub/connectors",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "dependencies": { "zod": "3.25.76", "papaparse": "^5.4.1", "@globalhub/shared": "workspace:*", "@globalhub/federation": "workspace:*" },
+  "devDependencies": { "@types/papaparse": "^5.3.15" }
+}

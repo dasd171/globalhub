@@ -1,0 +1,17 @@
+node_modules
+.next
+dist
+coverage
+.env
+.env.*
+!.env.example
+*.log
+.turbo
+playwright-report
+test-results
+storage/
+backups/
+.DS_Store
+tsconfig.tsbuildinfo
+deploy/nginx/certs/*.pem
+*.tsbuildinfo

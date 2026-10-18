@@ -1,0 +1,39 @@
+# Development stack: hot-reload API/web/worker, Postgres, Redis, MinIO and demo data.
+#   cp .env.example .env && docker compose -f docker-compose.dev.yml up --build
+# Ports are bound to 127.0.0.1 only.
+name: globalhub-dev
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment: { POSTGRES_USER: globalhub, POSTGRES_PASSWORD: globalhub-dev, POSTGRES_DB: globalhub }
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: [devpg:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U globalhub"], interval: 5s, retries: 10 }
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:6379:6379"]
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment: { MINIO_ROOT_USER: globalhub, MINIO_ROOT_PASSWORD: globalhub-dev-secret }
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
+  app:
+    image: node:22-bookworm
+    working_dir: /app
+    command: >
+      bash -c "corepack enable && pnpm install && pnpm db:generate && pnpm db:migrate && pnpm db:seed &&
+               npx concurrently -n api,worker,web 'pnpm --filter @globalhub/api dev' 'pnpm --filter @globalhub/worker dev' 'pnpm --filter @globalhub/web dev'"
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://globalhub:globalhub-dev@postgres:5432/globalhub
+      REDIS_URL: redis://redis:6379
+      AUTH_SECRET: ${AUTH_SECRET:-dev-only-auth-secret-not-for-production}
+      API_INTERNAL_URL: http://localhost:4000
+      SEED_DEMO: "true"
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-DemoPass-12345}
+      EMAIL_PROVIDER: log
+    ports: ["127.0.0.1:3000:3000", "127.0.0.1:4000:4000"]
+    volumes: [".:/app", "devnodemodules:/app/node_modules"]
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_started } }
+volumes: { devpg: {}, devnodemodules: {} }
